@@ -1,8 +1,14 @@
+require('dotenv').config();
+
 const express = require('express');
+const joi = require('joi');
+
+
 const logger = require('./middleware/logger');
 const {
   createTodoValidator,
   editTodoValidator,
+  schema
 } = require('./middleware/validator.js');
 
 const errorHandler = require('./middleware/errorHandler');
@@ -14,6 +20,8 @@ app.use(logger); // Custom middleware
 let todos = [
   { id: 1, task: 'Learn Node.js', completed: false },
   { id: 2, task: 'Build CRUD API', completed: false },
+  { id: 3, task: 'Test the API', completed: true },
+  { id: 4, task: 'Deploy to server', completed: true }
 ];
 
 // GET All – Read
@@ -21,9 +29,22 @@ app.get('/todos', (req, res) => {
   res.status(200).json(todos); // Send array as JSON
 });
 
+// GET One – Read
+app.get('/todos/:id', (req, res) => {
+  const todo = todos.find((t) => t.id === parseInt(req.params.id)); 
+  if (!todo) return res.status(404).json({message: 'Todo not found'});
+  res.status(200).json({message: 'Todo found', data : todo})
+});
+
 // POST New – Create
 app.post('/todos', createTodoValidator, (req, res) => {
-  const newTodo = { id: todos.length + 1, ...req.body }; // Auto-ID
+  const { error, value } = schema.validate(req.body);
+
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
+
+  const newTodo = { id: todos.length + 1, ...value };
   todos.push(newTodo);
   res.status(201).json(newTodo); // Echo back
 });
@@ -55,7 +76,13 @@ app.get('/todos/completed', (req, res) => {
   res.json(completed); // Custom Read!
 });
 
+app.get('/todos/completed/active', (req, res) => {
+  const completed = todos.filter((t) => t.completed !== false);
+  res.json(completed); // Custom Read!
+});
+
+
 app.use(errorHandler); // Error-handling middleware
 
-const PORT = 3002;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server on port ${PORT}`));

@@ -1,12 +1,12 @@
 const Joi = require('joi');
 
-const createTodoValidator = (req, res, next) => {
-  const schema = Joi.object({
+ const schema = Joi.object({
     task: Joi.string().min(3).max(100).required(),
     completed: Joi.boolean().optional(),
   });
 
-  const { error } = schema.validate(req.body);
+const createTodoValidator = (req, res, next) => {
+    const { error } = schema.validate(req.body);
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
   }
@@ -26,4 +26,4 @@ const editTodoValidator = (req, res, next) => {
   next();
 };
 
-module.exports = { createTodoValidator, editTodoValidator };
+module.exports = { createTodoValidator, editTodoValidator, schema };
