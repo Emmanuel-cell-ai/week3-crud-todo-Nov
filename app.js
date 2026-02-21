@@ -31,14 +31,19 @@ app.get('/todos', (req, res) => {
 
 // GET One – Read
 app.get('/todos/:id', (req, res) => {
-  const todo = todos.find((t) => t.id === parseInt(req.params.id)); 
-  if (!todo) return res.status(404).json({message: 'Todo not found'});
-  res.status(200).json({message: 'Todo found', data : todo})
+  try {
+    const todo = todos.find((t) => t.id === parseInt(req.params.id)); 
+    if (!todo) return res.status(404).json({message: 'Todo not found'});
+    res.status(200).json({message: 'Todo found', data : todo})
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 // POST New – Create
 app.post('/todos', createTodoValidator, (req, res) => {
-  const { error, value } = schema.validate(req.body);
+  try{
+    const { error, value } = schema.validate(req.body);
 
   if (error) {
     return res.status(400).json({ error: error.details[0].message });
@@ -47,18 +52,27 @@ app.post('/todos', createTodoValidator, (req, res) => {
   const newTodo = { id: todos.length + 1, ...value };
   todos.push(newTodo);
   res.status(201).json(newTodo); // Echo back
+  }catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+
+  
 });
 
 // PATCH Update – Partial
-app.patch('/todos/:id', editTodoValidator, (req, res) => {
-  const todo = todos.find((t) => t.id === parseInt(req.params.id)); // Array.find()
-  if (!todo) return res.status(404).json({ message: 'Todo not found' });
-  Object.assign(todo, req.body); // Merge: e.g., {completed: true}
-  res.status(200).json(todo);
+app.patch('/todos/:id', editTodoValidator, (req, res, next) => {
+  try {
+    const todo = todos.find((t) => t.id === parseInt(req.params.id)); // Array.find()
+    if (!todo) return res.status(404).json({ message: 'Todo not found' });
+    Object.assign(todo, req.body); // Merge: e.g., {completed: true}
+    res.status(200).json(todo);
+  } catch (error) {
+    next(error); // Pass to error handler
+  }
 });
 
 // DELETE Remove
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
     const initialLength = todos.length;
